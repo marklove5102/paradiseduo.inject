@@ -24,10 +24,19 @@ extension String {
     init(data: Data, offset: Int, commandSize: Int, loadCommandString: lc_str) {
         let loadCommandStringOffset = Int(loadCommandString.offset)
         let stringOffset = offset + loadCommandStringOffset
-        let length = commandSize - loadCommandStringOffset
-        let rawData = data[stringOffset..<(stringOffset + length)]
-        let endIndex = rawData.firstIndex(of: 0x00) ?? rawData.endIndex
-        self = String(data: data[stringOffset..<endIndex], encoding: .utf8)!
+        let commandEnd = offset + commandSize
+
+        guard loadCommandStringOffset > 0,
+              stringOffset >= data.startIndex,
+              stringOffset <= commandEnd,
+              commandEnd <= data.endIndex else {
+            self = ""
+            return
+        }
+
+        let rawData = data[stringOffset..<commandEnd].prefix { $0 != 0 }
+        self = String(decoding: rawData, as: UTF8.self)
+            .trimmingCharacters(in: .controlCharacters)
     }
 }
 
